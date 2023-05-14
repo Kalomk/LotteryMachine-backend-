@@ -3,6 +3,7 @@ import {assert,expect} from 'chai'
 import { Raffle,VRFCoordinatorV2Mock } from '../../typechain-types';
 import { developmentChains } from '../../helper-hardhat-config';
 import { BigNumber } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 !developmentChains.includes(network.name)
     ? describe.skip:
 describe('Raffle', async function (){
@@ -11,9 +12,11 @@ describe('Raffle', async function (){
     let VRFCoordinatorV2Mock: VRFCoordinatorV2Mock;
     let RaffleEntranceFee:BigNumber;
     let RaffleInterval:BigNumber;
+    let account:SignerWithAddress[]
 
     beforeEach(async function () {
         deployer = (await getNamedAccounts()).deployer;
+        account = await ethers.getSigners()
         await deployments.fixture(['all'])
         Raffle = await ethers.getContract('Raffle',deployer)
         VRFCoordinatorV2Mock = await ethers.getContract('VRFCoordinatorV2Mock',deployer)
@@ -42,7 +45,10 @@ describe('Raffle', async function (){
             await expect(Raffle.enterTheRaffle({value:RaffleEntranceFee})).to.be.emit(Raffle,'RaffleEnter')
          })
         it('Dosent allow entrance when status is calculating',async () =>{
-            await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            for(let i = 0; i < 2; i++){
+                Raffle = Raffle.connect(account[i])
+                await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            }
             await network.provider.send('evm_increaseTime',[RaffleInterval.toNumber() + 1])
             await network.provider.send('evm_mine',[])
             await Raffle.performUpkeep([])
@@ -51,14 +57,20 @@ describe('Raffle', async function (){
         })
     describe('checkUpKeep',async () =>{
         it("return false if players haven't send any ETH",async () =>{
-            await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            for(let i = 0; i < 2; i++){
+                Raffle = Raffle.connect(account[i])
+                await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            }
             await network.provider.send('evm_increaseTime',[RaffleInterval.toNumber() + 1])
             await network.provider.send('evm_mine',[])
             const {upkeepNeeded} = await Raffle.callStatic.checkUpkeep([])
             assert.isNotOk(!upkeepNeeded,'False!')
         })
         it("returns false if Raffle isn't open", async () => {
-            await Raffle.enterTheRaffle({ value: RaffleEntranceFee })
+            for(let i = 0; i < 2; i++){
+                Raffle = Raffle.connect(account[i])
+                await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            }
             await network.provider.send("evm_increaseTime", [RaffleInterval.toNumber() + 1])
             await network.provider.request({ method: "evm_mine", params: [] })
             await Raffle.performUpkeep([]) // changes the state to calculating
@@ -74,7 +86,10 @@ describe('Raffle', async function (){
             assert.isNotOk(upkeepNeeded,'False!')
         })
         it("returns true if enough time has passed, has players, eth, and is open", async () => {
-            await Raffle.enterTheRaffle({ value: RaffleEntranceFee })
+            for(let i = 0; i < 2; i++){
+                Raffle = Raffle.connect(account[i])
+                await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            }
             await network.provider.send("evm_increaseTime", [RaffleInterval.toNumber() + 1])
             await network.provider.request({ method: "evm_mine", params: [] })
             const { upkeepNeeded } = await Raffle.callStatic.checkUpkeep("0x") // upkeepNeeded = (timePassed && isOpen && hasBalance && hasPlayers)
@@ -83,7 +98,10 @@ describe('Raffle', async function (){
     })
     describe("performUpkeep", function () {
         it("can only run if checkupkeep is true", async () => {
-            await Raffle.enterTheRaffle({ value: RaffleEntranceFee })
+            for(let i = 0; i < 2; i++){
+                Raffle = Raffle.connect(account[i])
+                await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            }
             await network.provider.send("evm_increaseTime", [RaffleInterval.toNumber() + 1])
             await network.provider.request({ method: "evm_mine", params: [] })
             const tx = await Raffle.performUpkeep("0x") 
@@ -96,7 +114,10 @@ describe('Raffle', async function (){
         })
         it("updates the Raffle state and emits a requestId", async () => {
             // Too many asserts in this test!
-            await Raffle.enterTheRaffle({ value: RaffleEntranceFee })
+            for(let i = 0; i < 2; i++){
+                Raffle = Raffle.connect(account[i])
+                await Raffle.enterTheRaffle({value:RaffleEntranceFee})
+            }
             await network.provider.send("evm_increaseTime", [RaffleInterval.toNumber() + 1])
             await network.provider.request({ method: "evm_mine", params: [] })
             const txResponse = await Raffle.performUpkeep("0x") // emits requestId

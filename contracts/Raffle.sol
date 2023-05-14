@@ -115,7 +115,7 @@ contract Raffle is VRFConsumerBaseV2,AutomationCompatibleInterface {
         returns (bool upkeepNeeded, bytes memory)
     {
         bool isOpen = RaffleState.OPEN == s_raffleState;
-        bool hasAPlayers =(s_players.length > 0);
+        bool hasAPlayers =(s_players.length > 1);
         bool timePassed = ((block.timestamp - s_lastBlockStamp ) > i_interval);
         bool hasBalance = (address(this).balance > 0);
         upkeepNeeded = (isOpen && hasAPlayers && timePassed && hasBalance);

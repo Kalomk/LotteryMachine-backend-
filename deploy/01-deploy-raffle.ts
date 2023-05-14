@@ -20,7 +20,7 @@ const deployFundMe: DeployFunction = async function (
 
   let vrfCoordinatorV2Address:string,
   subscriptionId:string,
-  vrfCoordinatorV2Mock:Contract
+  vrfCoordinatorV2Mock:Contract;
   if (developmentChains.includes(network.name)) {
     // create VRFV2 Subscription
     vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
